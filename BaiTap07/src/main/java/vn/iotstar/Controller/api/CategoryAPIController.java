@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,45 +30,83 @@ public class CategoryAPIController {
 	@Autowired
 	IStorageService storageService;
 	
+	// Lấy tất cả category
 	@GetMapping
 	public ResponseEntity<?> getAllCategory() {
-		//return ResponseEntity.ok().body(categoryService.findAll());
 		return new ResponseEntity<Response>(new Response(true, "Thành công", categoryService.findAll()), HttpStatus.OK);
 	}
 	
-	@PostMapping(path = "/getCategory")
-	public ResponseEntity<?> getCategory(@Validated @RequestParam("id") Long id) {
+	// Lấy category theo ID
+	@GetMapping("/{id}")
+	public ResponseEntity<?> getCategory(@PathVariable("id") Long id) {
 		Optional<Category> category = categoryService.findById(id);
 		if (category.isPresent()) {
-			//return ResponseEntity.ok().body(category.get());
 			return new ResponseEntity<Response>(new Response(true, "Thành công", category.get()), HttpStatus.OK);
 		} else {
-			//return ResponseEntity.notFound().build();
-			return new ResponseEntity<Response>(new Response(false, "Thất bại", null), HttpStatus.NOT_FOUND);
+			return new ResponseEntity<Response>(new Response(false, "Không tìm thấy category", null), HttpStatus.NOT_FOUND);
 		}
 	}
 	
-	@PostMapping(path = "/addCategory")
-	public ResponseEntity<?> addCategory(@Validated @RequestParam("categoryName") String categoryName,
-			@Validated @RequestParam("icon") MultipartFile icon) {
+	// Thêm category mới
+	@PostMapping
+	public ResponseEntity<?> addCategory(@RequestParam("categoryName") String categoryName,
+			@RequestParam(value = "icon", required = false) MultipartFile icon) {
 		Optional<Category> optCategory = categoryService.findByCategoryName(categoryName);
 		if (optCategory.isPresent()) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Category đã tồn tại trong hệ thống");
-			//return new ResponseEntity<Response>(new Response(false, "Loại sản phẩm này đã tồn tại trong hệ thống", optCategory.get()), HttpStatus.BAD_REQUEST);
+			return new ResponseEntity<Response>(new Response(false, "Category đã tồn tại trong hệ thống", null), HttpStatus.BAD_REQUEST);
 		} else {
 			Category category = new Category();
+			category.setCategoryName(categoryName);
+			
 			//kiểm tra tồn tại file, lưu file
-			if(!icon.isEmpty()) {
+			if(icon != null && !icon.isEmpty()) {
 				UUID uuid = UUID.randomUUID();
 				String uuString = uuid.toString();
 				//lưu file vào trường Images
 				category.setIcon(storageService.getSorageFilename(icon, uuString));
 				storageService.store(icon, category.getIcon());
 			}
-			category.setCategoryName(categoryName);
+			
 			categoryService.save(category);
-			//return ResponseEntity.ok().body(category);
-			return new ResponseEntity<Response>(new Response(true, "Thêm Thành công", category), HttpStatus.OK);
+			return new ResponseEntity<Response>(new Response(true, "Thêm thành công", category), HttpStatus.OK);
+		}
+	}
+	
+	// Cập nhật category
+	@PutMapping("/{id}")
+	public ResponseEntity<?> updateCategory(@PathVariable("id") Long id,
+			@RequestParam("categoryName") String categoryName,
+			@RequestParam(value = "icon", required = false) MultipartFile icon) {
+		Optional<Category> optCategory = categoryService.findById(id);
+		if (optCategory.isPresent()) {
+			Category category = optCategory.get();
+			category.setCategoryName(categoryName);
+			
+			//kiểm tra tồn tại file, lưu file
+			if(icon != null && !icon.isEmpty()) {
+				UUID uuid = UUID.randomUUID();
+				String uuString = uuid.toString();
+				//lưu file vào trường Images
+				category.setIcon(storageService.getSorageFilename(icon, uuString));
+				storageService.store(icon, category.getIcon());
+			}
+			
+			categoryService.save(category);
+			return new ResponseEntity<Response>(new Response(true, "Cập nhật thành công", category), HttpStatus.OK);
+		} else {
+			return new ResponseEntity<Response>(new Response(false, "Không tìm thấy category", null), HttpStatus.NOT_FOUND);
+		}
+	}
+	
+	// Xóa category
+	@DeleteMapping("/{id}")
+	public ResponseEntity<?> deleteCategory(@PathVariable("id") Long id) {
+		Optional<Category> optCategory = categoryService.findById(id);
+		if (optCategory.isPresent()) {
+			categoryService.deleteById(id);
+			return new ResponseEntity<Response>(new Response(true, "Xóa thành công", null), HttpStatus.OK);
+		} else {
+			return new ResponseEntity<Response>(new Response(false, "Không tìm thấy category", null), HttpStatus.NOT_FOUND);
 		}
 	}
 }
