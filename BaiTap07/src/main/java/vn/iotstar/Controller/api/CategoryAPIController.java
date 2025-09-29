@@ -17,6 +17,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import vn.iotstar.entity.Category;
 import vn.iotstar.model.Response;
 import vn.iotstar.service.ICategoryService;
@@ -24,6 +29,7 @@ import vn.iotstar.service.IStorageService;
 
 @RestController
 @RequestMapping(path = "/api/category")
+@Tag(name = "Category API", description = "API quản lý Category")
 public class CategoryAPIController {
 	@Autowired
 	private ICategoryService categoryService;
@@ -32,6 +38,11 @@ public class CategoryAPIController {
 	
 	// Lấy tất cả category
 	@GetMapping
+	@Operation(summary = "Lấy tất cả categories", description = "Trả về danh sách tất cả categories")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "Thành công"),
+		@ApiResponse(responseCode = "500", description = "Lỗi server")
+	})
 	public ResponseEntity<?> getAllCategory() {
 		return new ResponseEntity<Response>(new Response(true, "Thành công", categoryService.findAll()), HttpStatus.OK);
 	}
